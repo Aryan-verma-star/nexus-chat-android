@@ -1,11 +1,13 @@
 import { LogOut, User, Bell, Palette, HardDrive, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const SettingsTab = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("nexus_user");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -18,13 +20,17 @@ const SettingsTab = () => {
       {/* Profile */}
       <div className="px-4 py-4">
         <div className="flex items-center gap-4 mb-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface font-display text-xl text-primary">
-            Y
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface font-display text-xl text-primary overflow-hidden">
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt={user.display_name} className="h-full w-full object-cover" />
+            ) : (
+              (user?.display_name || user?.username || "?").charAt(0).toUpperCase()
+            )}
           </div>
           <div>
-            <p className="font-body text-lg font-semibold text-foreground">Yoon</p>
-            <p className="font-body text-xs text-muted-foreground">@yoon</p>
-            <p className="font-body text-xs text-primary mt-0.5">Building the future</p>
+            <p className="font-body text-lg font-semibold text-foreground">{user?.display_name || user?.username || "User"}</p>
+            <p className="font-body text-xs text-muted-foreground">@{user?.username || "username"}</p>
+            <p className="font-body text-xs text-primary mt-0.5">{user?.custom_status || "Online"}</p>
           </div>
         </div>
       </div>
@@ -46,13 +52,17 @@ const SettingsTab = () => {
         <SettingsItem label="Font Size: Medium" />
 
         <SectionHeader icon={HardDrive} label="Storage & Data" />
-        <SettingsItem label="Storage Used: 234 MB" />
+        <SettingsItem label="Storage Used: 0 MB" />
         <SettingsItem label="Clear Cache" />
 
-        <SectionHeader icon={Shield} label="Admin Panel" />
-        <SettingsItem label="User Management" />
-        <SettingsItem label="Integration Settings" />
-        <SettingsItem label="System Logs" />
+        {user?.role === "admin" && (
+          <>
+            <SectionHeader icon={Shield} label="Admin Panel" />
+            <SettingsItem label="User Management" />
+            <SettingsItem label="Integration Settings" />
+            <SettingsItem label="System Logs" />
+          </>
+        )}
       </div>
 
       {/* About */}
@@ -65,7 +75,7 @@ const SettingsTab = () => {
       <div className="px-4 pb-8">
         <button
           onClick={handleLogout}
-          className="press flex w-full items-center justify-center gap-2 rounded-xl border border-destructive py-3 font-display text-sm font-semibold text-destructive transition-all duration-200 hover:bg-destructive/10"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive py-3 font-display text-sm font-semibold text-destructive transition-all duration-200 hover:bg-destructive/10 active:scale-[0.98]"
         >
           <LogOut className="h-4 w-4" />
           Disconnect
@@ -83,7 +93,7 @@ const SectionHeader = ({ icon: Icon, label }: { icon: typeof User; label: string
 );
 
 const SettingsItem = ({ label, badge }: { label: string; badge?: string }) => (
-  <button className="press flex w-full items-center justify-between px-4 py-3 text-left transition-all duration-200 hover:bg-muted/30">
+  <button className="flex w-full items-center justify-between px-4 py-3 text-left transition-all duration-200 hover:bg-muted/30 active:scale-[0.99]">
     <span className="font-body text-sm text-foreground">{label}</span>
     {badge && (
       <span className="rounded-full bg-primary/20 px-2 py-0.5 font-display text-[9px] text-primary uppercase">{badge}</span>

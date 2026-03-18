@@ -29,10 +29,10 @@ const BottomNav = ({ activeTab, onTabChange, unreadChats = 0, newJobs = 0 }: Bot
         const isActive = activeTab === tab.id;
         const badge = getBadge(tab.id);
         return (
-          <button
+            <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="press relative flex flex-col items-center gap-0.5 px-4 py-2"
+            className="relative flex flex-col items-center gap-0.5 px-4 py-2 transition-transform active:scale-90"
           >
             {isActive && (
               <span className="absolute -top-1 h-1 w-1 rounded-full bg-primary pulse-dot" />

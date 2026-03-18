@@ -1,11 +1,43 @@
-import { mockJobs } from "@/data/mockData";
-import { useState } from "react";
-import { Clock, DollarSign, Briefcase } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Clock, DollarSign, Briefcase, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { Job } from "@/lib/supabase";
 
 const JobsTab = () => {
+  const { user } = useAuth();
   const [filter, setFilter] = useState<"all" | "new" | "claimed" | "completed">("all");
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [claiming, setClaiming] = useState<string | null>(null);
 
-  const filtered = mockJobs.filter((j) => filter === "all" || j.status === filter);
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        const result = await api.jobs.list();
+        setJobs(result.data);
+      } catch (err) {
+        console.error("Failed to load jobs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadJobs();
+  }, []);
+
+  const handleClaim = async (jobId: string) => {
+    setClaiming(jobId);
+    try {
+      await api.jobs.claim(jobId);
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "claimed", claimed_by: user?.id } : j));
+    } catch (err) {
+      console.error("Failed to claim job:", err);
+    } finally {
+      setClaiming(null);
+    }
+  };
+
+  const filtered = jobs.filter((j) => filter === "all" || j.status === filter);
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -17,6 +49,26 @@ const JobsTab = () => {
   };
 
   const platformColor = (p: string) => p === "fiverr" ? "bg-primary/20 text-primary" : "bg-secondary/20 text-secondary";
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (hours < 1) return "just now";
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -30,11 +82,11 @@ const JobsTab = () => {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`press whitespace-nowrap rounded-full px-3 py-1 font-display text-[10px] uppercase tracking-wider transition-all duration-200 ${
+              className={`whitespace-nowrap rounded-full px-3 py-1 font-display text-[10px] uppercase tracking-wider transition-all duration-200 active:scale-95 ${
                 filter === f ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"
               }`}
             >
-              {f} ({mockJobs.filter((j) => f === "all" || j.status === f).length})
+              {f} ({jobs.filter((j) => f === "all" || j.status === f).length})
             </button>
           ))}
         </div>
@@ -47,26 +99,32 @@ const JobsTab = () => {
               <span className={`rounded-full px-2 py-0.5 font-display text-[10px] uppercase tracking-wider ${platformColor(job.platform)}`}>
                 {job.platform}
               </span>
-              <span className="font-body text-[11px] text-muted-foreground">{job.createdAt}</span>
+              <span className="font-body text-[11px] text-muted-foreground">{formatTime(job.created_at)}</span>
             </div>
             <h3 className="font-body text-base font-semibold text-foreground mb-1">{job.title}</h3>
             <p className="font-body text-sm text-muted-foreground line-clamp-2 mb-3">{job.description}</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1 font-body text-sm font-semibold text-primary">
-                  <DollarSign className="h-3.5 w-3.5" />{job.budget}
+                  <DollarSign className="h-3.5 w-3.5" />{job.budget_amount || "0"}
                 </span>
-                <span className="flex items-center gap-1 font-body text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />{job.deadline}
-                </span>
+                {job.deadline && (
+                  <span className="flex items-center gap-1 font-body text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />{new Date(job.deadline).toLocaleDateString()}
+                  </span>
+                )}
               </div>
               <span className={`rounded-full px-2 py-0.5 font-display text-[10px] uppercase ${statusColor(job.status)}`}>
-                {job.status === "claimed" ? `Claimed by ${job.claimedBy}` : job.status}
+                {job.status === "claimed" ? `Claimed by ${job.claimer?.display_name || "Someone"}` : job.status}
               </span>
             </div>
             {job.status === "new" && (
-              <button className="press mt-3 w-full rounded-xl bg-gradient-sent py-2.5 font-display text-xs font-bold uppercase tracking-wider text-primary-foreground transition-all duration-200 hover:brightness-110">
-                Claim Job
+              <button 
+                onClick={() => handleClaim(job.id)}
+                disabled={claiming === job.id}
+                className="mt-3 w-full rounded-xl bg-gradient-sent py-2.5 font-display text-xs font-bold uppercase tracking-wider text-primary-foreground transition-all duration-200 hover:brightness-110 disabled:opacity-50 active:scale-[0.98]"
+              >
+                {claiming === job.id ? <Loader2 className="h-4 w-4 mx-auto animate-spin" /> : "Claim Job"}
               </button>
             )}
           </div>

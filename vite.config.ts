@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: ['.free.pinggy.link', 'localhost'],
     hmr: {
       overlay: false,
     },

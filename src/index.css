@@ -121,7 +121,11 @@
   }
 
   .press {
-    @apply transition-transform duration-200 active:scale-[0.95];
+    transition: transform 0.2s ease;
+  }
+
+  .press:active {
+    transform: scale(0.95);
   }
 
   .hover-lift {

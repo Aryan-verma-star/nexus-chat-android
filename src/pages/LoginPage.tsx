@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { api, isAuthenticated } from "@/lib/api";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -18,12 +19,14 @@ const LoginPage = () => {
     }
     setLoading(true);
     setError("");
-    // Mock login - will be replaced with Supabase auth
-    setTimeout(() => {
-      localStorage.setItem("nexus_user", JSON.stringify({ username, displayName: username }));
-      setLoading(false);
+
+    try {
+      await api.auth.login(username, password);
       navigate("/chat");
-    }, 1200);
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please check your credentials.");
+      setLoading(false);
+    }
   };
 
   return (
