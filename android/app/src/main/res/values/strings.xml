@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nexus Chat Hub</string>
+    <string name="title_activity_main">Nexus Chat Hub</string>
+    <string name="package_name">com.nexus.chathub</string>
+    <string name="custom_url_scheme">com.nexus.chathub</string>
+</resources>
